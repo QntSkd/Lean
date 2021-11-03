@@ -129,6 +129,35 @@ namespace QuantConnect.Data
         /// <returns>True if ticker prices should be scaled</returns>
         public static bool PricesShouldBeScaled(this SubscriptionDataConfig config)
         {
+            if (config.IsCustomData || config.Symbol.Value.Contains("UNIVERSE"))
+            {
+                return false;
+            }
+
+            if(config.SecurityType == SecurityType.Equity)
+            {
+                return true;
+            }
+
+            if (config.SecurityType == SecurityType.Future && config.Symbol.IsCanonical())
+            {
+                return config.DataNormalizationMode is QuantConnect.DataNormalizationMode.BackwardsRatio
+                    or QuantConnect.DataNormalizationMode.BackwardsPanamaCanal
+                    or QuantConnect.DataNormalizationMode.ForwardPanamaCanal;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Will determine if splits and dividends should be used for this subscription configuration
+        /// </summary>
+        /// <param name="config">The subscription data configuration we are processing</param>
+        /// <remarks>Different than <see cref="PricesShouldBeScaled"/> because prices could be scale and no split and dividends
+        /// really exist, like in the continuous futures case</remarks>
+        /// <returns>True if this configuration requires split and divided handling</returns>
+        public static bool EmitSplitsAndDividends(this SubscriptionDataConfig config)
+        {
             return !config.IsCustomData && !config.Symbol.Value.Contains("UNIVERSE") && config.SecurityType == SecurityType.Equity;
         }
 
